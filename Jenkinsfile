@@ -42,15 +42,15 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
-                        sh 'docker build --build-arg TMDB_V3_API_KEY=b1d4988f6cd31131db31a41c3523b9c4 -t netflix .'
-                        sh 'docker tag netflix akshay23007/netflix:latest'
-                        sh 'docker push akshay23007/netflix:latest'
+                        sh 'docker build --build-arg TMDB_V3_API_KEY=68f46e27dfbb53cb1f47418ffb3fb8a1 -t hotstar .'
+                        sh 'docker tag netflix naresh9163/hotstar:latest'
+                        sh 'docker push naresh9163/hotstar:latest'
                     }
                 }
             }
         }
         stage('TRIVY Image Scan') {
-            steps { sh 'trivy image akshay23007/netflix:latest > trivyimage.txt' }
+            steps { sh 'trivy image naresh9163/hotstar:latest > trivyimage.txt' }
         }
         stage('Deploy to EKS') {
             steps {
@@ -61,7 +61,7 @@ pipeline {
                     ]) {
                         sh '''
                             export AWS_DEFAULT_REGION=ap-south-1
-                            aws eks update-kubeconfig --region ap-south-1 --name cloudnetflix
+                            aws eks update-kubeconfig --region ap-south-1 --name cloudhotstar
                             kubectl apply -f deployment.yml
                             kubectl get pods
                             kubectl get svc
