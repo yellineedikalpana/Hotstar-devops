@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    options {
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+    }
+
     tools {
         jdk 'jdk17'
         nodejs 'node18'
@@ -19,62 +25,29 @@ pipeline {
         stage('Checkout from Git') {
             steps {
                 echo "Cloning repo..."
-                git(
-                    branch: 'main',
-                    credentialsId: 'github-token',
-                    url: 'https://github.com/Naresh916/Hotstar-devops.git'
-                )
-            }
-        }
-
-        stage('Debug Workspace') {
-            steps {
-                echo "===== WORKSPACE PATH ====="
-                sh 'pwd'
-
-                echo "===== ROOT FILES ====="
-                sh 'ls -la'
-
-                echo "===== hotstar FOLDER FILES ====="
-                sh 'ls -la hotstar'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/Naresh916/Hotstar-devops.git',
+                        credentialsId: 'github-token'
+                    ]]
+                ])
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo "Running npm install..."
                 sh '''
+                    echo "WORKSPACE CHECK:"
+                    pwd
+                    ls -la
+
+                    echo "Installing npm deps..."
                     cd hotstar
                     npm install
                 '''
             }
         }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh '''
-                        $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=hotstar \
-                        -Dsonar.projectKey=hotstar \
-                        -Dsonar.sources=hotstar
-                    '''
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                script { waitForQualityGate abortPipeline: false }
-            }
-        }
-
-        stage('TRIVY FS Scan') {
-            steps { sh 'trivy fs . > trivyfs.txt' }
-        }
-
-        stage('Docker Build & Push') {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
-                        sh 'docker build --build-arg TMDB_V3_API_KEY=68f46e27dfbb53cb1f47418ffb3fb8a1 -t hotstar hotstar/'
+    }
+}
