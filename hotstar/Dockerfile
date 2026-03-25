@@ -5,13 +5,15 @@ WORKDIR /app
 
 # Accept TMDB key from Jenkins
 ARG REACT_APP_TMDB
-ENV REACT_APP_TMDB=${REACT_APP_TMDB}
+ENV REACT_APP_TMDB=$REACT_APP_TMDB
 
-COPY package.json .
-COPY package-lock.json .
+COPY package.json package-lock.json ./
 RUN npm install
 
+# COPY AFTER setting ENV so build picks variable
 COPY . .
+
+RUN echo "REACT_APP_TMDB is: $REACT_APP_TMDB"
 RUN npm run build
 
 # Stage 2: Serve with NGINX
