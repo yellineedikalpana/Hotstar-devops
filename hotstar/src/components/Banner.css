@@ -1,0 +1,25 @@
+.banner {
+  height: 70vh;
+  background-size: cover;
+  background-position: center center;
+  color: white;
+  position: relative;
+}
+
+.banner-content {
+  padding-top: 140px;
+  padding-left: 40px;
+  width: 45%;
+}
+
+.banner-title {
+  font-size: 50px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.banner-description {
+  font-size: 18px;
+  line-height: 1.4;
+  max-width: 80%;
+}
