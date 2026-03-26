@@ -56,7 +56,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
-                        sh 'docker build --build-arg REACT_APP_TMDB=68f46e27dfbb53cb1f47418ffb3fb8a1 -t hotstar hotstar/'
+                        sh 'docker build --no-cache --build-arg REACT_APP_TMDB=68f46e27dfbb53cb1f47418ffb3fb8a1 -t hotstar hotstar/'
                         sh 'docker tag hotstar naresh9163/hotstar:latest'
                         sh 'docker push naresh9163/hotstar:latest'
                     }
