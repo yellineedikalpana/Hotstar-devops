@@ -5,10 +5,14 @@ function App() {
   const [movies, setMovies] = useState([]);
 
   useEffect(() => {
+    const API_KEY = process.env.REACT_APP_TMDB; // <-- Correct usage
+
+    console.log("API Key inside React:", API_KEY); // Debug: should NOT be undefined
+
     axios
-      .get(`https://api.themoviedb.org/3/movie/popular?api_key=${process.env.REACT_APP_TMDB}`)
+      .get(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}`)
       .then((res) => setMovies(res.data.results))
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("TMDB Error:", err));
   }, []);
 
   return (
