@@ -13,18 +13,21 @@ pipeline {
     }
 
     environment {
-        SCANNER_HOME = tool 'sonar-token'
+        SCANNER_HOME = tool 'sonar-scanner'
+        TMDB_API_KEY = credentials('tmdb-api-key')
     }
 
     stages {
 
         stage('Clean Workspace') {
-            steps { cleanWs() }
+            steps {
+                cleanWs()
+            }
         }
 
         stage('Checkout from Git') {
             steps {
-                echo "Cloning repo..."
+                echo 'Cloning repo...'
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: '*/main']],
@@ -36,6 +39,24 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectName=netflix \
+                        -Dsonar.projectKey=netflix
+                    '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                waitForQualityGate abortPipeline: true
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh '''
@@ -43,46 +64,65 @@ pipeline {
                     pwd
                     ls -la
 
-                    echo "Installing npm deps..."
+                    echo "Installing npm dependencies..."
                     cd hotstar
                     npm install
                 '''
             }
         }
+
         stage('TRIVY FS Scan') {
-            steps { sh 'trivy fs . > trivyfs.txt' }
+            steps {
+                sh 'trivy fs . > trivyfs.txt'
+            }
         }
+
         stage('Docker Build & Push') {
             steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
-                        sh 'docker build --no-cache --build-arg REACT_APP_TMDB=68f46e27dfbb53cb1f47418ffb3fb8a1 -t hotstar hotstar/'
-                        sh 'docker tag hotstar yellineedidevops/hotstar:latest'
-                        sh 'docker push yellineedidevops/hotstar:latest'
-                    }
+                withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
+                    sh '''
+                        docker build --no-cache \
+                          --build-arg REACT_APP_TMDB=${TMDB_API_KEY} \
+                          -t hotstar hotstar/
+
+                        docker tag hotstar yellineedidevops/hotstar:latest
+                        docker push yellineedidevops/hotstar:latest
+                    '''
                 }
             }
         }
+
         stage('TRIVY Image Scan') {
-            steps { sh 'trivy image yellineedidevops/hotstar:latest > trivyimage.txt' }
+            steps {
+                sh 'trivy image yellineedidevops/hotstar:latest > trivyimage.txt'
+            }
         }
+
         stage('Deploy to EKS') {
             steps {
-                script {
-                    withCredentials([
-                        string(credentialsId: 'aws_access', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'aws_secret', variable: 'AWS_SECRET_ACCESS_KEY')
-                    ]) {
-                        sh '''
-                            export AWS_DEFAULT_REGION=us-east-1
-                            aws eks update-kubeconfig --region us-east-1 --name cloudhotstar
-                            kubectl apply -f deployment.yml
-                            kubectl get pods
-                            kubectl get svc
-                        '''
-                    }
+                withCredentials([
+                    string(credentialsId: 'aws_access', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws_secret', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        export AWS_DEFAULT_REGION=us-east-1
+                        aws eks update-kubeconfig --region us-east-1 --name cloudhotstar
+
+                        kubectl apply -f deployment.yml
+                        kubectl get pods
+                        kubectl get svc
+                    '''
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed.'
+        }
+        failure {
+            echo 'Pipeline failed. Please check logs.'
         }
     }
 }
