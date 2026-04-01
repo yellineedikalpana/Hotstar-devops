@@ -27,7 +27,7 @@ pipeline {
 
         stage('Checkout from Git') {
             steps {
-                echo 'Cloning repo...'
+                echo 'Cloning repository...'
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: '*/main']],
@@ -60,11 +60,6 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    echo "WORKSPACE CHECK:"
-                    pwd
-                    ls -la
-
-                    echo "Installing npm dependencies..."
                     cd hotstar
                     npm install
                 '''
@@ -82,8 +77,8 @@ pipeline {
                 withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
                     sh '''
                         docker build --no-cache \
-                          --build-arg REACT_APP_TMDB=${TMDB_API_KEY} \
-                          -t hotstar hotstar/
+                        --build-arg REACT_APP_TMDB=${TMDB_API_KEY} \
+                        -t hotstar hotstar/
 
                         docker tag hotstar yellineedidevops/hotstar:latest
                         docker push yellineedidevops/hotstar:latest
@@ -107,7 +102,6 @@ pipeline {
                     sh '''
                         export AWS_DEFAULT_REGION=us-east-1
                         aws eks update-kubeconfig --region us-east-1 --name cloudhotstar
-
                         kubectl apply -f deployment.yml
                         kubectl get pods
                         kubectl get svc
