@@ -29,7 +29,7 @@ pipeline {
                     $class: 'GitSCM',
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[
-                        url: 'https://github.com/Naresh916/Hotstar-devops.git',
+                        url: 'https://github.com/yellineedikalpana/Hotstar-devops.git',
                         credentialsId: 'github-token'
                     ]]
                 ])
@@ -57,25 +57,25 @@ pipeline {
                 script {
                     withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
                         sh 'docker build --no-cache --build-arg REACT_APP_TMDB=68f46e27dfbb53cb1f47418ffb3fb8a1 -t hotstar hotstar/'
-                        sh 'docker tag hotstar naresh9163/hotstar:latest'
-                        sh 'docker push naresh9163/hotstar:latest'
+                        sh 'docker tag hotstar yellineedidevops/hotstar:latest'
+                        sh 'docker push yellineedidevops/hotstar:latest'
                     }
                 }
             }
         }
         stage('TRIVY Image Scan') {
-            steps { sh 'trivy image naresh9163/hotstar:latest > trivyimage.txt' }
+            steps { sh 'trivy image yellineedidevops/hotstar:latest > trivyimage.txt' }
         }
         stage('Deploy to EKS') {
             steps {
                 script {
                     withCredentials([
-                        string(credentialsId: 'AWS_Access_key', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'AWS_Secret_key', variable: 'AWS_SECRET_ACCESS_KEY')
+                        string(credentialsId: 'aws_access', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'aws_secret', variable: 'AWS_SECRET_ACCESS_KEY')
                     ]) {
                         sh '''
-                            export AWS_DEFAULT_REGION=ap-south-1
-                            aws eks update-kubeconfig --region ap-south-1 --name cloudhotstar
+                            export AWS_DEFAULT_REGION=us-east-1
+                            aws eks update-kubeconfig --region us-east-1 --name cloudhotstar
                             kubectl apply -f deployment.yml
                             kubectl get pods
                             kubectl get svc
