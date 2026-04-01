@@ -13,7 +13,7 @@ pipeline {
     }
 
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-token'
         TMDB_API_KEY = credentials('tmdb-api-key')
     }
 
@@ -43,7 +43,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        ${SCANNER_HOME}/bin/sonar-token \
                         -Dsonar.projectName=netflix \
                         -Dsonar.projectKey=netflix
                     '''
